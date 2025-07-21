@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Gestão de Projetos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #e5e5e5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .topo {
+      background: #ffffff;
+      padding: 12px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .logo-dct {
+      height: 46.3px;
+      object-fit: contain;
+    }
+
+    .logo-eurofarma {
+      height: 65.5px;
+      object-fit: contain;
+    }
+
+    .titulo-centro {
+      flex-grow: 1;
+      text-align: center;
+      margin: 0 20px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .titulo-centro .linha1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.6px;
+      color: #222;
+    }
+
+    .titulo-centro .linha2 {
+      font-size: 19px;
+      font-weight: 700;
+      margin: 4px 0 0 0;
+      color: #444;
+    }
+
+    .painel {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 20px 40px;
+      flex-wrap: wrap;
+    }
+
+    .indicadores {
+      display: flex;
+      gap: 14px;
+      flex-wrap: nowrap;
+    }
+
+    .indicador {
+      background: #0078D4;
+      border-radius: 20px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      min-width: 180px;
+      max-width: 200px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .indicador .titulo {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .indicador .valor {
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .indicador .texto {
+      font-size: 12px;
+    }
+
+    .graficos {
+      display: flex;
+      flex-direction: column;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .grafico-container {
+      position: relative;
+      width: 180px;
+      height: 200px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.05);
+      padding: 12px;
+    }
+
+    .grafico-container canvas {
+      width: 160px !important;
+      height: 160px !important;
+    }
+
+    .grafico-label {
+      position: absolute;
+      top: 56%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Poppins', sans-serif;
+      font-size: 22px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .grafico-titulo {
+      text-align: center;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    #csvButtonContainer {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      font-size: 11px;
+      background: rgba(255,255,255,0.85);
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topo">
+    <img src="https://i.imgur.com/Jfm7qFu.png" class="logo-dct" alt="Logo DCT Engenharia">
+    <div class="titulo-centro">
+      <p class="linha1">Gestão de Projetos</p>
+      <p class="linha2">Elétrica – DCT / Eurofarma</p>
+    </div>
+    <img src="https://i.imgur.com/J1NK2oP.png" class="logo-eurofarma" alt="Logo Eurofarma">
+  </div>
+  <div class="painel">
+    <div class="indicadores" id="indicadoresResumo"></div>
+
+    <div class="graficos">
+      <div class="grafico-container">
+        <div class="grafico-titulo">Distribuição por Status</div>
+        <canvas id="graficoStatus"></canvas>
+        <div class="grafico-label" id="labelStatus">0%</div>
+      </div>
+      <div class="grafico-container">
+        <div class="grafico-titulo">Projetos em Andamento</div>
+        <canvas id="graficoAndamento"></canvas>
+        <div class="grafico-label" id="labelAndamento">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="csvButtonContainer">
+    <label for="arquivoCSV">📁 Importar CSV</label><br />
+    <input type="file" id="arquivoCSV" accept=".csv" />
+  </div>
+
+  <script>
+    const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRD-zEHf2Bb_SC452T8EiNc3igLlsoaQe7s2SF0AI2HkEPmFzwlrgDDwi7rt1FsuJ3PEJIRF37HfeQw/pub?output=csv";
+
+    let totalProjetos = 0;
+    let andamento = 0;
+    let contagemStatus = {};
+
+    function processaDados(data) {
+      contagemStatus = {};
+      andamento = 0;
+      totalProjetos = data.length;
+
+      data.forEach(row => {
+        if (row.Status) {
+          const status = row.Status.trim();
+          contagemStatus[status] = (contagemStatus[status] || 0) + 1;
+          if (status.toLowerCase() === "em andamento") andamento++;
+        }
+      });
+
+      const container = document.getElementById("indicadoresResumo");
+      container.innerHTML = `
+        <div class="indicador">
+          <div class="titulo">Total de Projetos</div>
+          <div class="valor">${totalProjetos}</div>
+          <div class="texto">projetos</div>
+        </div>
+      `;
+
+      Object.entries(contagemStatus).forEach(([status, count]) => {
+        container.innerHTML += `
+          <div class="indicador">
+            <div class="titulo">${status}</div>
+            <div class="valor">${count}</div>
+            <div class="texto">projetos</div>
+          </div>
+        `;
+      });
+
+      const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
+      const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
+      document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
+
+      new Chart(document.getElementById('graficoStatus'), {
+        type: 'doughnut',
+        data: {
+          labels: [maiorStatus[0], 'Outros'],
+          datasets: [{
+            data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
+            backgroundColor: ['#0078D4', '#E0E0E0']
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: { legend: { display: false } }
+        }
+      });
+
+      const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
+      document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
+
+      new Chart(document.getElementById('graficoAndamento'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Em Andamento', 'Outros'],
+          datasets: [{
+            data: [andamento, totalProjetos - andamento],
+            backgroundColor: ['#34A853', '#E0E0E0']
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    // 🔄 Carregamento automático via Google Sheets
+    fetch(planilhaCSV)
+      .then(response => response.text())
+      .then(csv => {
+        Papa.parse(csv, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            processaDados(results.data);
+          }
+        });
+      });
+
+    // 📁 Substituição manual via botão
+    document.getElementById("arquivoCSV").addEventListener("change", function(e) {
+      Papa.parse(e.target.files[0], {
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          processaDados(results.data);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
