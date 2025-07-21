@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Poppins', sans-serif;
       background: #e5e5e5;
       margin: 0;
       padding: 0;
@@ -24,12 +24,12 @@
     }
 
     .logo-dct {
-      height: 46.3px;
+      height: 46px;
       object-fit: contain;
     }
 
     .logo-eurofarma {
-      height: 65.5px;
+      height: 65px;
       object-fit: contain;
     }
 
@@ -37,7 +37,6 @@
       flex-grow: 1;
       text-align: center;
       margin: 0 20px;
-      font-family: 'Poppins', sans-serif;
     }
 
     .titulo-centro .linha1 {
@@ -57,16 +56,15 @@
 
     .painel {
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      flex-direction: column;
+      gap: 40px;
       padding: 20px 40px;
-      flex-wrap: wrap;
     }
 
     .indicadores {
       display: flex;
       gap: 14px;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
     .indicador {
@@ -99,9 +97,9 @@
 
     .graficos {
       display: flex;
-      flex-direction: column;
-      gap: 34px;
-      align-items: center;
+      flex-direction: row;
+      gap: 40px;
+      justify-content: center;
     }
 
     .grafico-container {
@@ -124,7 +122,6 @@
       top: 56%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-family: 'Poppins', sans-serif;
       font-size: 22px;
       font-weight: bold;
       color: #333;
@@ -132,7 +129,6 @@
 
     .grafico-titulo {
       text-align: center;
-      font-family: 'Poppins', sans-serif;
       font-weight: 600;
       font-size: 13px;
       color: #333;
@@ -161,122 +157,154 @@
     </div>
     <img src="https://i.imgur.com/J1NK2oP.png" class="logo-eurofarma" alt="Logo Eurofarma">
   </div>
-<script>
-  const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
 
-  function processaDados(data) {
-    let totalProjetos = data.length;
-    let andamento = 0;
-    let contagemStatus = {};
+  <div class="painel">
+    <div class="indicadores" id="indicadoresResumo"></div>
 
-    data.forEach(row => {
-      if (row.Status) {
-        const status = row.Status.trim();
-        contagemStatus[status] = (contagemStatus[status] || 0) + 1;
-        if (status.toLowerCase() === "em andamento") andamento++;
-      }
-    });
-
-    const container = document.getElementById("indicadoresResumo");
-    container.innerHTML = `
-      <div class="indicador">
-        <div class="titulo">Total de Projetos</div>
-        <div class="valor">${totalProjetos}</div>
-        <div class="texto">projetos</div>
+    <div class="graficos">
+      <div class="grafico-container">
+        <div class="grafico-titulo">Distribuição por Status</div>
+        <canvas id="graficoStatus"></canvas>
+        <div class="grafico-label" id="labelStatus">0%</div>
       </div>
-    `;
+      <div class="grafico-container">
+        <div class="grafico-titulo">Projetos em Andamento</div>
+        <canvas id="graficoAndamento"></canvas>
+        <div class="grafico-label" id="labelAndamento">0%</div>
+      </div>
+    </div>
+  </div>
 
-    Object.entries(contagemStatus).forEach(([status, count]) => {
+  <div id="csvButtonContainer">
+    <label for="arquivoCSV">📁 Importar CSV</label><br />
+    <input type="file" id="arquivoCSV" accept=".csv" />
+  </div>
+  <script>
+    const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
+
+    function processaDados(data) {
+      const container = document.getElementById("indicadoresResumo");
+      container.innerHTML = "";
+      let totalProjetos = data.length;
+      let andamento = 0;
+      let contagemStatus = {};
+
+      data.forEach(row => {
+        if (row.Status) {
+          const status = row.Status.trim();
+          contagemStatus[status] = (contagemStatus[status] || 0) + 1;
+          if (status.toLowerCase() === "em andamento") andamento++;
+        }
+      });
+
       container.innerHTML += `
         <div class="indicador">
-          <div class="titulo">${status}</div>
-          <div class="valor">${count}</div>
+          <div class="titulo">Total de Projetos</div>
+          <div class="valor">${totalProjetos}</div>
           <div class="texto">projetos</div>
         </div>
       `;
-    });
 
-    const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
-    const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
-    document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
+      Object.entries(contagemStatus).forEach(([status, count]) => {
+        container.innerHTML += `
+          <div class="indicador">
+            <div class="titulo">${status}</div>
+            <div class="valor">${count}</div>
+            <div class="texto">projetos</div>
+          </div>
+        `;
+      });
 
-    new Chart(document.getElementById('graficoStatus'), {
-      type: 'doughnut',
-      data: {
-        labels: [maiorStatus[0], 'Outros'],
-        datasets: [{
-          data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
-          backgroundColor: ['#0078D4', '#E0E0E0']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
+      const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
+      const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
+      document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
 
-    const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
-    document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
+      new Chart(document.getElementById('graficoStatus'), {
+        type: 'doughnut',
+        data: {
+          labels: [maiorStatus[0], 'Outros'],
+          datasets: [{
+            data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
+            backgroundColor: ['#0078D4', '#E0E0E0']
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: { legend: { display: false } }
+        }
+      });
 
-    new Chart(document.getElementById('graficoAndamento'), {
-      type: 'doughnut',
-      data: {
-        labels: ['Em Andamento', 'Outros'],
-        datasets: [{
-          data: [andamento, totalProjetos - andamento],
-          backgroundColor: ['#34A853', '#E0E0E0']
-        }]
-      },
-      options: {
-        cutout: '70%',
-        plugins: { legend: { display: false } }
-      }
-    });
+      const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
+      document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
 
-    // 🔷 Indicadores Eurofarma
-    const totalSubmetido = data.filter(row =>
-      row["Submetido Aconex"]?.trim().toUpperCase() === "SIM"
-    ).length;
+      new Chart(document.getElementById('graficoAndamento'), {
+        type: 'doughnut',
+        data: {
+          labels: ['Em Andamento', 'Outros'],
+          datasets: [{
+            data: [andamento, totalProjetos - andamento],
+            backgroundColor: ['#34A853', '#E0E0E0']
+          }]
+        },
+        options: {
+          cutout: '70%',
+          plugins: { legend: { display: false } }
+        }
+      });
 
-    const respostas = { "Aprovado": 0, "Revisão": 0, "Em Análise": 0 };
+      // 🔷 Indicadores Eurofarma
+      const totalSubmetido = data.filter(row =>
+        row["Submetido Aconex"]?.trim().toUpperCase() === "SIM"
+      ).length;
 
-    data.forEach(row => {
-      const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
-      if (resposta === "APROVADO") respostas["Aprovado"]++;
-      if (resposta === "REVISÃO") respostas["Revisão"]++;
-      if (resposta === "EM ANÁLISE") respostas["Em Análise"]++;
-    });
+      const respostas = { "Aprovado": 0, "Revisão": 0, "Em Análise": 0 };
 
-    const eurofarmaContainer = document.createElement("div");
-    eurofarmaContainer.className = "indicadores";
-    eurofarmaContainer.style.marginTop = "40px";
+      data.forEach(row => {
+        const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
+        if (resposta === "APROVADO") respostas["Aprovado"]++;
+        if (resposta === "REVISÃO") respostas["Revisão"]++;
+        if (resposta === "EM ANÁLISE") respostas["Em Análise"]++;
+      });
 
-    eurofarmaContainer.innerHTML += `
-      <div class="indicador">
-        <div class="titulo">Submetido Aconex</div>
-        <div class="valor">${totalSubmetido}</div>
-        <div class="texto">projetos</div>
-      </div>
-    `;
+      const eurofarmaContainer = document.createElement("div");
+      eurofarmaContainer.className = "indicadores";
+      eurofarmaContainer.style.marginTop = "40px";
 
-    Object.entries(respostas).forEach(([status, count]) => {
       eurofarmaContainer.innerHTML += `
         <div class="indicador">
-          <div class="titulo">${status}</div>
-          <div class="valor">${count}</div>
+          <div class="titulo">Submetido Aconex</div>
+          <div class="valor">${totalSubmetido}</div>
           <div class="texto">projetos</div>
         </div>
       `;
-    });
 
-    document.querySelector(".painel").appendChild(eurofarmaContainer);
-  }
+      Object.entries(respostas).forEach(([status, count]) => {
+        eurofarmaContainer.innerHTML += `
+          <div class="indicador">
+            <div class="titulo">${status}</div>
+            <div class="valor">${count}</div>
+            <div class="texto">projetos</div>
+          </div>
+        `;
+      });
 
-  // 🔄 Carregamento automático via Google Sheets
-  fetch(planilhaCSV)
-    .then(response => response.text())
-    .then(csv => {
-      Papa.parse(csv, {
+      document.querySelector(".painel").appendChild(eurofarmaContainer);
+    }
+
+    fetch(planilhaCSV)
+      .then(response => response.text())
+      .then(csv => {
+        Papa.parse(csv, {
+          header: true,
+          skipEmptyLines: true,
+          complete: function(results) {
+            processaDados(results.data);
+          }
+        });
+      });
+
+    document.getElementById("arquivoCSV").addEventListener("change", function(e) {
+      Papa.parse(e.target.files[0], {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
@@ -284,17 +312,6 @@
         }
       });
     });
-
-  // 📁 Substituição manual via botão
-  document.getElementById("arquivoCSV").addEventListener("change", function(e) {
-    Papa.parse(e.target.files[0], {
-      header: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        processaDados(results.data);
-      }
-    });
-  });
-</script>
+  </script>
 </body>
 </html>
