@@ -56,15 +56,17 @@
 
     .painel {
       display: flex;
-      flex-direction: column;
-      gap: 40px;
+      flex-direction: row;
+      justify-content: space-between;
       padding: 20px 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
     }
 
     .indicadores {
       display: flex;
-      gap: 14px;
       flex-wrap: wrap;
+      gap: 14px;
     }
 
     .indicador {
@@ -97,9 +99,9 @@
 
     .graficos {
       display: flex;
-      flex-direction: row;
-      gap: 40px;
-      justify-content: center;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 34px;
     }
 
     .grafico-container {
