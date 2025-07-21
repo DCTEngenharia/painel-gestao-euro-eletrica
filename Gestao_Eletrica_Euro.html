@@ -161,121 +161,122 @@
     </div>
     <img src="https://i.imgur.com/J1NK2oP.png" class="logo-eurofarma" alt="Logo Eurofarma">
   </div>
-  <div class="painel">
-    <div class="indicadores" id="indicadoresResumo"></div>
+<script>
+  const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRD-zEHf2Bb_SC452T8EiNc3igLlsoaQe7s2SF0AI2HkEPmFzwlrgDDwi7rt1FsuJ3PEJIRF37HfeQw/pub?output=csv";
 
-    <div class="graficos">
-      <div class="grafico-container">
-        <div class="grafico-titulo">Distribuição por Status</div>
-        <canvas id="graficoStatus"></canvas>
-        <div class="grafico-label" id="labelStatus">0%</div>
-      </div>
-      <div class="grafico-container">
-        <div class="grafico-titulo">Projetos em Andamento</div>
-        <canvas id="graficoAndamento"></canvas>
-        <div class="grafico-label" id="labelAndamento">0%</div>
-      </div>
-    </div>
-  </div>
-
-  <div id="csvButtonContainer">
-    <label for="arquivoCSV">📁 Importar CSV</label><br />
-    <input type="file" id="arquivoCSV" accept=".csv" />
-  </div>
-
-  <script>
-    const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRD-zEHf2Bb_SC452T8EiNc3igLlsoaQe7s2SF0AI2HkEPmFzwlrgDDwi7rt1FsuJ3PEJIRF37HfeQw/pub?output=csv";
-
-    let totalProjetos = 0;
+  function processaDados(data) {
+    let totalProjetos = data.length;
     let andamento = 0;
     let contagemStatus = {};
 
-    function processaDados(data) {
-      contagemStatus = {};
-      andamento = 0;
-      totalProjetos = data.length;
+    data.forEach(row => {
+      if (row.Status) {
+        const status = row.Status.trim();
+        contagemStatus[status] = (contagemStatus[status] || 0) + 1;
+        if (status.toLowerCase() === "em andamento") andamento++;
+      }
+    });
 
-      data.forEach(row => {
-        if (row.Status) {
-          const status = row.Status.trim();
-          contagemStatus[status] = (contagemStatus[status] || 0) + 1;
-          if (status.toLowerCase() === "em andamento") andamento++;
-        }
-      });
+    const container = document.getElementById("indicadoresResumo");
+    container.innerHTML = `
+      <div class="indicador">
+        <div class="titulo">Total de Projetos</div>
+        <div class="valor">${totalProjetos}</div>
+        <div class="texto">projetos</div>
+      </div>
+    `;
 
-      const container = document.getElementById("indicadoresResumo");
-      container.innerHTML = `
+    Object.entries(contagemStatus).forEach(([status, count]) => {
+      container.innerHTML += `
         <div class="indicador">
-          <div class="titulo">Total de Projetos</div>
-          <div class="valor">${totalProjetos}</div>
+          <div class="titulo">${status}</div>
+          <div class="valor">${count}</div>
           <div class="texto">projetos</div>
         </div>
       `;
+    });
 
-      Object.entries(contagemStatus).forEach(([status, count]) => {
-        container.innerHTML += `
-          <div class="indicador">
-            <div class="titulo">${status}</div>
-            <div class="valor">${count}</div>
-            <div class="texto">projetos</div>
-          </div>
-        `;
-      });
+    const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
+    const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
+    document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
 
-      const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
-      const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
-      document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
+    new Chart(document.getElementById('graficoStatus'), {
+      type: 'doughnut',
+      data: {
+        labels: [maiorStatus[0], 'Outros'],
+        datasets: [{
+          data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
+          backgroundColor: ['#0078D4', '#E0E0E0']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
 
-      new Chart(document.getElementById('graficoStatus'), {
-        type: 'doughnut',
-        data: {
-          labels: [maiorStatus[0], 'Outros'],
-          datasets: [{
-            data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
-            backgroundColor: ['#0078D4', '#E0E0E0']
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: { legend: { display: false } }
-        }
-      });
+    const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
+    document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
 
-      const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
-      document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
+    new Chart(document.getElementById('graficoAndamento'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Em Andamento', 'Outros'],
+        datasets: [{
+          data: [andamento, totalProjetos - andamento],
+          backgroundColor: ['#34A853', '#E0E0E0']
+        }]
+      },
+      options: {
+        cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
 
-      new Chart(document.getElementById('graficoAndamento'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Em Andamento', 'Outros'],
-          datasets: [{
-            data: [andamento, totalProjetos - andamento],
-            backgroundColor: ['#34A853', '#E0E0E0']
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: { legend: { display: false } }
-        }
-      });
-    }
+    // 🔷 Indicadores Eurofarma
+    const totalSubmetido = data.filter(row =>
+      row["Submetido Aconex"]?.trim().toUpperCase() === "SIM"
+    ).length;
 
-    // 🔄 Carregamento automático via Google Sheets
-    fetch(planilhaCSV)
-      .then(response => response.text())
-      .then(csv => {
-        Papa.parse(csv, {
-          header: true,
-          skipEmptyLines: true,
-          complete: function(results) {
-            processaDados(results.data);
-          }
-        });
-      });
+    const respostas = { "Aprovado": 0, "Revisão": 0, "Em Análise": 0 };
 
-    // 📁 Substituição manual via botão
-    document.getElementById("arquivoCSV").addEventListener("change", function(e) {
-      Papa.parse(e.target.files[0], {
+    data.forEach(row => {
+      const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
+      if (resposta === "APROVADO") respostas["Aprovado"]++;
+      if (resposta === "REVISÃO") respostas["Revisão"]++;
+      if (resposta === "EM ANÁLISE") respostas["Em Análise"]++;
+    });
+
+    const eurofarmaContainer = document.createElement("div");
+    eurofarmaContainer.className = "indicadores";
+    eurofarmaContainer.style.marginTop = "40px";
+
+    eurofarmaContainer.innerHTML += `
+      <div class="indicador">
+        <div class="titulo">Submetido Aconex</div>
+        <div class="valor">${totalSubmetido}</div>
+        <div class="texto">projetos</div>
+      </div>
+    `;
+
+    Object.entries(respostas).forEach(([status, count]) => {
+      eurofarmaContainer.innerHTML += `
+        <div class="indicador">
+          <div class="titulo">${status}</div>
+          <div class="valor">${count}</div>
+          <div class="texto">projetos</div>
+        </div>
+      `;
+    });
+
+    document.querySelector(".painel").appendChild(eurofarmaContainer);
+  }
+
+  // 🔄 Carregamento automático via Google Sheets
+  fetch(planilhaCSV)
+    .then(response => response.text())
+    .then(csv => {
+      Papa.parse(csv, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
@@ -283,7 +284,17 @@
         }
       });
     });
-  </script>
+
+  // 📁 Substituição manual via botão
+  document.getElementById("arquivoCSV").addEventListener("change", function(e) {
+    Papa.parse(e.target.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        processaDados(results.data);
+      }
+    });
+  });
+</script>
 </body>
 </html>
-
