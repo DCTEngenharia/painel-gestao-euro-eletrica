@@ -56,15 +56,24 @@
 
     .painel {
       display: flex;
-      flex-direction: column;
-      gap: 40px;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 60px;
       padding: 20px 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .bloco-indicadores {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
     }
 
     .indicadores {
       display: flex;
       gap: 14px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
     }
 
     .indicador {
@@ -97,19 +106,18 @@
 
     .graficos {
       display: flex;
-      flex-direction: row;
-      gap: 40px;
-      justify-content: center;
+      flex-direction: column;
+      gap: 34px;
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.05);
     }
 
     .grafico-container {
       position: relative;
       width: 180px;
       height: 200px;
-      background: #ffffff;
-      border-radius: 16px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.05);
-      padding: 12px;
     }
 
     .grafico-container canvas {
@@ -159,7 +167,10 @@
   </div>
 
   <div class="painel">
-    <div class="indicadores" id="indicadoresResumo"></div>
+    <div class="bloco-indicadores">
+      <div class="indicadores" id="indicadoresDCT"></div>
+      <div class="indicadores" id="indicadoresEurofarma"></div>
+    </div>
 
     <div class="graficos">
       <div class="grafico-container">
@@ -179,132 +190,120 @@
     <label for="arquivoCSV">📁 Importar CSV</label><br />
     <input type="file" id="arquivoCSV" accept=".csv" />
   </div>
-  <script>
-    const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
+<script>
+  const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
 
-    function processaDados(data) {
-      const container = document.getElementById("indicadoresResumo");
-      container.innerHTML = "";
-      let totalProjetos = data.length;
-      let andamento = 0;
-      let contagemStatus = {};
+  function processaDados(data) {
+    const containerDCT = document.getElementById("indicadoresDCT");
+    const containerEurofarma = document.getElementById("indicadoresEurofarma");
+    containerDCT.innerHTML = "";
+    containerEurofarma.innerHTML = "";
 
-      data.forEach(row => {
-        if (row.Status) {
-          const status = row.Status.trim();
-          contagemStatus[status] = (contagemStatus[status] || 0) + 1;
-          if (status.toLowerCase() === "em andamento") andamento++;
-        }
-      });
+    let totalProjetos = data.length;
+    let andamento = 0;
 
-      container.innerHTML += `
+    const contagemDCT = {
+      "Concluído": 0,
+      "Em Andamento": 0,
+      "Em Revisão": 0
+    };
+
+    const contagemEurofarma = {
+      "Submetido Aconex": 0,
+      "Aprovado": 0,
+      "Revisão Solicitada": 0,
+      "Em Análise": 0
+    };
+
+    data.forEach(row => {
+      const status = row.Status?.trim().toUpperCase();
+      if (status === "CONCLUÍDO") contagemDCT["Concluído"]++;
+      if (status === "EM ANDAMENTO") contagemDCT["Em Andamento"]++;
+      if (status === "EM REVISÃO") contagemDCT["Em Revisão"]++;
+      if (status === "EM ANDAMENTO") andamento++;
+
+      const submetido = row["Submetido Aconex"]?.trim().toUpperCase();
+      if (submetido === "SIM") contagemEurofarma["Submetido Aconex"]++;
+
+      const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
+      if (resposta === "APROVADO") contagemEurofarma["Aprovado"]++;
+      if (resposta === "REVISÃO") contagemEurofarma["Revisão Solicitada"]++;
+      if (resposta === "EM ANÁLISE") contagemEurofarma["Em Análise"]++;
+    });
+
+    // Indicadores DCT
+    containerDCT.innerHTML += `
+      <div class="indicador">
+        <div class="titulo">Total de Projetos</div>
+        <div class="valor">${totalProjetos}</div>
+        <div class="texto">projetos</div>
+      </div>
+    `;
+    Object.entries(contagemDCT).forEach(([status, count]) => {
+      containerDCT.innerHTML += `
         <div class="indicador">
-          <div class="titulo">Total de Projetos</div>
-          <div class="valor">${totalProjetos}</div>
+          <div class="titulo">${status}</div>
+          <div class="valor">${count}</div>
           <div class="texto">projetos</div>
         </div>
       `;
+    });
 
-      Object.entries(contagemStatus).forEach(([status, count]) => {
-        container.innerHTML += `
-          <div class="indicador">
-            <div class="titulo">${status}</div>
-            <div class="valor">${count}</div>
-            <div class="texto">projetos</div>
-          </div>
-        `;
-      });
-
-      const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
-      const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
-      document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
-
-      new Chart(document.getElementById('graficoStatus'), {
-        type: 'doughnut',
-        data: {
-          labels: [maiorStatus[0], 'Outros'],
-          datasets: [{
-            data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
-            backgroundColor: ['#0078D4', '#E0E0E0']
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: { legend: { display: false } }
-        }
-      });
-
-      const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
-      document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
-
-      new Chart(document.getElementById('graficoAndamento'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Em Andamento', 'Outros'],
-          datasets: [{
-            data: [andamento, totalProjetos - andamento],
-            backgroundColor: ['#34A853', '#E0E0E0']
-          }]
-        },
-        options: {
-          cutout: '70%',
-          plugins: { legend: { display: false } }
-        }
-      });
-
-      // 🔷 Indicadores Eurofarma
-      const totalSubmetido = data.filter(row =>
-        row["Submetido Aconex"]?.trim().toUpperCase() === "SIM"
-      ).length;
-
-      const respostas = { "Aprovado": 0, "Revisão": 0, "Em Análise": 0 };
-
-      data.forEach(row => {
-        const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
-        if (resposta === "APROVADO") respostas["Aprovado"]++;
-        if (resposta === "REVISÃO") respostas["Revisão"]++;
-        if (resposta === "EM ANÁLISE") respostas["Em Análise"]++;
-      });
-
-      const eurofarmaContainer = document.createElement("div");
-      eurofarmaContainer.className = "indicadores";
-      eurofarmaContainer.style.marginTop = "40px";
-
-      eurofarmaContainer.innerHTML += `
+    // Indicadores Eurofarma
+    Object.entries(contagemEurofarma).forEach(([status, count]) => {
+      containerEurofarma.innerHTML += `
         <div class="indicador">
-          <div class="titulo">Submetido Aconex</div>
-          <div class="valor">${totalSubmetido}</div>
+          <div class="titulo">${status}</div>
+          <div class="valor">${count}</div>
           <div class="texto">projetos</div>
         </div>
       `;
+    });
 
-      Object.entries(respostas).forEach(([status, count]) => {
-        eurofarmaContainer.innerHTML += `
-          <div class="indicador">
-            <div class="titulo">${status}</div>
-            <div class="valor">${count}</div>
-            <div class="texto">projetos</div>
-          </div>
-        `;
-      });
+    // Gráfico Status
+    const maiorStatus = Object.entries(contagemDCT).sort((a, b) => b[1] - a[1])[0];
+    const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
+    document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
 
-      document.querySelector(".painel").appendChild(eurofarmaContainer);
-    }
+    new Chart(document.getElementById("graficoStatus"), {
+      type: "doughnut",
+      data: {
+        labels: [maiorStatus[0], "Outros"],
+        datasets: [{
+          data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
+          backgroundColor: ["#0078D4", "#E0E0E0"]
+        }]
+      },
+      options: {
+        cutout: "70%",
+        plugins: { legend: { display: false } }
+      }
+    });
 
-    fetch(planilhaCSV)
-      .then(response => response.text())
-      .then(csv => {
-        Papa.parse(csv, {
-          header: true,
-          skipEmptyLines: true,
-          complete: function(results) {
-            processaDados(results.data);
-          }
-        });
-      });
+    // Gráfico Andamento
+    const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
+    document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
 
-    document.getElementById("arquivoCSV").addEventListener("change", function(e) {
-      Papa.parse(e.target.files[0], {
+    new Chart(document.getElementById("graficoAndamento"), {
+      type: "doughnut",
+      data: {
+        labels: ["Em Andamento", "Outros"],
+        datasets: [{
+          data: [andamento, totalProjetos - andamento],
+          backgroundColor: ["#34A853", "#E0E0E0"]
+        }]
+      },
+      options: {
+        cutout: "70%",
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  fetch(planilhaCSV)
+    .then(response => response.text())
+    .then(csv => {
+      Papa.parse(csv, {
         header: true,
         skipEmptyLines: true,
         complete: function(results) {
@@ -312,6 +311,16 @@
         }
       });
     });
-  </script>
+
+  document.getElementById("arquivoCSV").addEventListener("change", function(e) {
+    Papa.parse(e.target.files[0], {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        processaDados(results.data);
+      }
+    });
+  });
+</script>
 </body>
 </html>
