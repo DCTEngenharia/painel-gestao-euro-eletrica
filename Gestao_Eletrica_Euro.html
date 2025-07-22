@@ -56,23 +56,15 @@
 
     .painel {
       display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      padding: 20px 40px;
-      align-items: flex-start;
-      flex-wrap: wrap;
-    }
-
-    .bloco-indicadores {
-      display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 40px;
+      padding: 20px 40px;
     }
 
     .indicadores {
       display: flex;
       gap: 14px;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
 
     .indicador {
@@ -105,18 +97,19 @@
 
     .graficos {
       display: flex;
-      flex-direction: column;
-      gap: 34px;
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.05);
+      flex-direction: row;
+      gap: 40px;
+      justify-content: center;
     }
 
     .grafico-container {
       position: relative;
       width: 180px;
       height: 200px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.05);
+      padding: 12px;
     }
 
     .grafico-container canvas {
@@ -166,10 +159,7 @@
   </div>
 
   <div class="painel">
-    <div class="bloco-indicadores">
-      <div class="indicadores" id="indicadoresDCT"></div>
-      <div class="indicadores" id="indicadoresEurofarma"></div>
-    </div>
+    <div class="indicadores" id="indicadoresResumo"></div>
 
     <div class="graficos">
       <div class="grafico-container">
@@ -193,24 +183,21 @@
     const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
 
     function processaDados(data) {
+      const container = document.getElementById("indicadoresResumo");
+      container.innerHTML = "";
       let totalProjetos = data.length;
       let andamento = 0;
-      const contagemDCT = {
-        "Concluído": 0,
-        "Em Andamento": 0,
-        "Em Revisão": 0
-      };
+      let contagemStatus = {};
 
       data.forEach(row => {
-        const status = row.Status?.trim().toUpperCase();
-        if (status === "CONCLUÍDO") contagemDCT["Concluído"]++;
-        if (status === "EM ANDAMENTO") contagemDCT["Em Andamento"]++;
-        if (status === "EM REVISÃO") contagemDCT["Em Revisão"]++;
-        if (status === "EM ANDAMENTO") andamento++;
+        if (row.Status) {
+          const status = row.Status.trim();
+          contagemStatus[status] = (contagemStatus[status] || 0) + 1;
+          if (status.toLowerCase() === "em andamento") andamento++;
+        }
       });
 
-      const containerDCT = document.getElementById("indicadoresDCT");
-      containerDCT.innerHTML = `
+      container.innerHTML += `
         <div class="indicador">
           <div class="titulo">Total de Projetos</div>
           <div class="valor">${totalProjetos}</div>
@@ -218,8 +205,8 @@
         </div>
       `;
 
-      Object.entries(contagemDCT).forEach(([status, count]) => {
-        containerDCT.innerHTML += `
+      Object.entries(contagemStatus).forEach(([status, count]) => {
+        container.innerHTML += `
           <div class="indicador">
             <div class="titulo">${status}</div>
             <div class="valor">${count}</div>
@@ -228,8 +215,7 @@
         `;
       });
 
-      const maiorStatus = Object.entries(contagemDCT).sort((a,b) => b[1] - a[1])[0];
-      const percentualStatus = Math.round
+      const maiorStatus = Object.entries(contagemStatus).sort((a,b) => b[1] - a[1])[0];
       const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
       document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
 
@@ -271,21 +257,20 @@
         row["Submetido Aconex"]?.trim().toUpperCase() === "SIM"
       ).length;
 
-      const respostas = {
-        "Aprovado": 0,
-        "Revisão Solicitada": 0,
-        "Em Análise": 0
-      };
+      const respostas = { "Aprovado": 0, "Revisão": 0, "Em Análise": 0 };
 
       data.forEach(row => {
         const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
         if (resposta === "APROVADO") respostas["Aprovado"]++;
-        if (resposta === "REVISÃO") respostas["Revisão Solicitada"]++;
+        if (resposta === "REVISÃO") respostas["Revisão"]++;
         if (resposta === "EM ANÁLISE") respostas["Em Análise"]++;
       });
 
-      const eurofarmaContainer = document.getElementById("indicadoresEurofarma");
-      eurofarmaContainer.innerHTML = `
+      const eurofarmaContainer = document.createElement("div");
+      eurofarmaContainer.className = "indicadores";
+      eurofarmaContainer.style.marginTop = "40px";
+
+      eurofarmaContainer.innerHTML += `
         <div class="indicador">
           <div class="titulo">Submetido Aconex</div>
           <div class="valor">${totalSubmetido}</div>
@@ -302,6 +287,8 @@
           </div>
         `;
       });
+
+      document.querySelector(".painel").appendChild(eurofarmaContainer);
     }
 
     fetch(planilhaCSV)
