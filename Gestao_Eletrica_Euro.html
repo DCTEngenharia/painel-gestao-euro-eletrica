@@ -57,27 +57,30 @@
     .painel {
       display: flex;
       flex-direction: row;
-      justify-content: flex-start;
+      justify-content: space-between;
       align-items: flex-start;
-      gap: 60px;
+      gap: 40px;
       padding: 20px 40px;
       flex-wrap: nowrap;
+      min-width: 960px;
       overflow-x: auto;
     }
 
     .bloco-indicadores {
+      flex: none;
+      width: 720px;
       display: flex;
       flex-direction: column;
       gap: 28px;
-      flex: 1;
-      min-width: 0;
-      max-width: calc(100% - 320px);
+      align-items: center;
+      margin-left: 2.54cm; /* deslocamento preciso */
     }
 
     .indicadores {
       display: flex;
       gap: 14px;
       flex-wrap: nowrap;
+      justify-content: center;
     }
 
     .indicador {
@@ -111,13 +114,16 @@
     .graficos {
       display: flex;
       flex-direction: column;
+      align-items: center;
       gap: 34px;
       background: #ffffff;
-      border-radius: 20px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 16px;
       box-shadow: 0 0 6px rgba(0,0,0,0.05);
-      width: 300px;
+      width: 220px;
       flex-shrink: 0;
+      margin-left: auto;
+      margin-right: 0;
     }
 
     .grafico-container {
@@ -160,16 +166,17 @@
       box-shadow: 0 0 4px rgba(0,0,0,0.2);
     }
 
-    /* Responsivo */
     @media screen and (max-width: 768px) {
       .painel {
         flex-direction: column;
         align-items: center;
       }
 
-      .bloco-indicadores, .graficos {
+      .bloco-indicadores,
+      .graficos {
         max-width: 100%;
         width: 100%;
+        margin-left: 0;
       }
 
       .graficos {
