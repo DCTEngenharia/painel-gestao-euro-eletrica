@@ -1,60 +1,186 @@
-<style>
-  .painel {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding: 20px 40px;
-    gap: 30px;
-  }
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Gestão de Projetos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #e5e5e5;
+      margin: 0;
+      padding: 0;
+    }
 
-  .bloco-indicadores {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
+    .topo {
+      background: #ffffff;
+      padding: 12px 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
 
-  .indicadores {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-  }
+    .logo-dct {
+      height: 46px;
+      object-fit: contain;
+    }
 
-  .bloco-graficos {
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 20px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.05);
-    display: flex;
-    flex-direction: column;
-    gap: 34px;
-  }
+    .logo-eurofarma {
+      height: 65px;
+      object-fit: contain;
+    }
 
-  .grafico-container {
-    position: relative;
-    width: 180px;
-    height: 200px;
-  }
-</style>
+    .titulo-centro {
+      flex-grow: 1;
+      text-align: center;
+      margin: 0 20px;
+    }
 
-<div class="painel">
-  <div class="bloco-indicadores">
+    .titulo-centro .linha1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: 0.6px;
+      color: #222;
+    }
+
+    .titulo-centro .linha2 {
+      font-size: 19px;
+      font-weight: 700;
+      margin: 4px 0 0 0;
+      color: #444;
+    }
+
+    .painel {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 20px 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .indicadores {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .indicador {
+      background: #0078D4;
+      border-radius: 20px;
+      padding: 14px 18px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      min-width: 180px;
+      max-width: 200px;
+      text-align: center;
+      color: #ffffff;
+    }
+
+    .indicador .titulo {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .indicador .valor {
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .indicador .texto {
+      font-size: 12px;
+    }
+
+    .graficos {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 34px;
+    }
+
+    .grafico-container {
+      position: relative;
+      width: 180px;
+      height: 200px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 0 6px rgba(0,0,0,0.05);
+      padding: 12px;
+    }
+
+    .grafico-container canvas {
+      width: 160px !important;
+      height: 160px !important;
+    }
+
+    .grafico-label {
+      position: absolute;
+      top: 56%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 22px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .grafico-titulo {
+      text-align: center;
+      font-weight: 600;
+      font-size: 13px;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    #csvButtonContainer {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      font-size: 11px;
+      background: rgba(255,255,255,0.85);
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 0 4px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topo">
+    <img src="https://i.imgur.com/Jfm7qFu.png" class="logo-dct" alt="Logo DCT Engenharia">
+    <div class="titulo-centro">
+      <p class="linha1">Gestão de Projetos</p>
+      <p class="linha2">Elétrica – DCT / Eurofarma</p>
+    </div>
+    <img src="https://i.imgur.com/J1NK2oP.png" class="logo-eurofarma" alt="Logo Eurofarma">
+  </div>
+
+  <div class="painel">
     <div class="indicadores" id="indicadoresResumo"></div>
-    <div class="indicadores" id="indicadoresEurofarma"></div>
+
+    <div class="graficos">
+      <div class="grafico-container">
+        <div class="grafico-titulo">Distribuição por Status</div>
+        <canvas id="graficoStatus"></canvas>
+        <div class="grafico-label" id="labelStatus">0%</div>
+      </div>
+      <div class="grafico-container">
+        <div class="grafico-titulo">Projetos em Andamento</div>
+        <canvas id="graficoAndamento"></canvas>
+        <div class="grafico-label" id="labelAndamento">0%</div>
+      </div>
+    </div>
   </div>
 
-  <div class="bloco-graficos">
-    <div class="grafico-container">
-      <div class="grafico-titulo">Distribuição por Status</div>
-      <canvas id="graficoStatus"></canvas>
-      <div class="grafico-label" id="labelStatus">0%</div>
-    </div>
-    <div class="grafico-container">
-      <div class="grafico-titulo">Projetos em Andamento</div>
-      <canvas id="graficoAndamento"></canvas>
-      <div class="grafico-label" id="labelAndamento">0%</div>
-    </div>
+  <div id="csvButtonContainer">
+    <label for="arquivoCSV">📁 Importar CSV</label><br />
+    <input type="file" id="arquivoCSV" accept=".csv" />
   </div>
-</div>
   <script>
     const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
 
