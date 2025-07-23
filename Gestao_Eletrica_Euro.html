@@ -1,3 +1,6 @@
+<!-- ::::::::: INÍCIO DO CÓDIGO – PARTE 01A ::::::::: -->
+<!-- Dashboard DTO v2.7 – Indicadores à esquerda, gráficos fixos à direita -->
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -57,7 +60,7 @@
     .painel {
       display: flex;
       flex-direction: row;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: flex-start;
       gap: 40px;
       padding: 20px 40px;
@@ -72,15 +75,15 @@
       display: flex;
       flex-direction: column;
       gap: 28px;
-      align-items: center;
-      margin-left: 2.54cm; /* deslocamento preciso */
+      align-items: flex-start;
+      margin-left: 0.3cm; /* ✅ alinhado com a tabela */
     }
 
     .indicadores {
       display: flex;
       gap: 14px;
       flex-wrap: nowrap;
-      justify-content: center;
+      justify-content: flex-start;
     }
 
     .indicador {
@@ -92,6 +95,12 @@
       max-width: 200px;
       text-align: center;
       color: #ffffff;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .indicador:hover {
+      transform: scale(1.03);
     }
 
     .indicador .titulo {
@@ -112,6 +121,7 @@
     }
 
     .graficos {
+      flex: none;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -121,9 +131,7 @@
       padding: 16px;
       box-shadow: 0 0 6px rgba(0,0,0,0.05);
       width: 220px;
-      flex-shrink: 0;
-      margin-left: auto;
-      margin-right: 0;
+      margin-left: auto; /* ✅ fixado no canto direito */
     }
 
     .grafico-container {
@@ -166,6 +174,38 @@
       box-shadow: 0 0 4px rgba(0,0,0,0.2);
     }
 
+    #tabelaProjetos {
+      background: #ffffff;  /* ✅ bordas retas — arredondamento removido */
+      box-shadow: 0 0 6px rgba(0,0,0,0.05);
+      width: 860px;             /* ✅ largura expandida da tabela */
+      height: 200px;            /* ✅ altura fixa visível — mesmo sem dados */
+      max-height: 200px;        /* ✅ limite vertical para scroll ativar */
+      overflow-y: auto;         /* ✅ scroll vertical automático */
+      overflow-x: auto;         /* ✅ scroll horizontal para muitas colunas */
+      margin: 16px 0 0 0cm;     /* ✅ colado na lateral esquerda */
+      padding: 20px;            /* ✅ espaçamento interno para leitura clara */
+      font-size: 13px;          /* ✅ texto padronizado dos dados */
+      color: #333;              /* ✅ cor de fonte neutra e legível */
+}
+
+
+    #tabelaProjetos table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    #tabelaProjetos th, #tabelaProjetos td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    #tabelaProjetos th {
+      background: #f2f2f2;
+      font-weight: bold;
+    }
+
     @media screen and (max-width: 768px) {
       .painel {
         flex-direction: column;
@@ -187,9 +227,21 @@
         flex-wrap: wrap;
         justify-content: center;
       }
+
+      #tabelaProjetos {
+        width: 96%;
+        max-height: 300px;
+        margin-left: auto;
+        margin-right: auto;
+      }
     }
   </style>
 </head>
+
+<!-- ::::::::: CONTINUAÇÃO DO CÓDIGO – PARTE 01B ::::::::: -->
+<!-- Parte 01B – Dashboard DTO v2.8 -->
+<!-- Desenvolvido por DTO + Copilot = Engenharia com Estilo e Precisão 🧱 -->
+
 <body>
 
   <div class="topo">
@@ -201,41 +253,55 @@
     <img src="https://i.imgur.com/J1NK2oP.png" class="logo-eurofarma" alt="Logo Eurofarma">
   </div>
 
+  <!-- 🧱 PAINEL PRINCIPAL COM TODOS OS BLOCOS ALINHADOS -->
   <div class="painel">
+  
+    <!-- 🔵 BLOCO DE INDICADORES -->
     <div class="bloco-indicadores">
       <div class="indicadores" id="indicadoresDCT"></div>
       <div class="indicadores" id="indicadoresEurofarma"></div>
+
+      <!-- 🔵 TABELA — agora dentro do bloco, logo abaixo dos indicadores -->
+      <div id="tabelaProjetos">
+        <p style="text-align:center; color:#777;">Selecione um indicador para exibir os dados aqui...</p>
+      </div>
     </div>
 
+    <!-- 🟠 GRÁFICOS ROSCA — fixos à direita e no topo -->
     <div class="graficos">
       <div class="grafico-container">
-        <div class="grafico-titulo">Distribuição por Status</div>
+        <div class="grafico-titulo">Alerta de Prazos</div>
         <canvas id="graficoStatus"></canvas>
         <div class="grafico-label" id="labelStatus">0%</div>
       </div>
       <div class="grafico-container">
-        <div class="grafico-titulo">Projetos em Andamento</div>
+        <div class="grafico-titulo">Submissões da Semana</div>
         <canvas id="graficoAndamento"></canvas>
         <div class="grafico-label" id="labelAndamento">0%</div>
       </div>
     </div>
+
   </div>
 
+  <!-- 🟢 BOTÃO CSV -->
   <div id="csvButtonContainer">
     <label for="arquivoCSV">📁 Importar CSV</label><br />
     <input type="file" id="arquivoCSV" accept=".csv" />
   </div>
+
+<!-- ::::::::: INÍCIO DO CÓDIGO – PARTE 02 ::::::::: -->
 <script>
   const planilhaCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTeKHP3NBrjWs7vY3PRYZAsaQ4hY0cZwHl3SbzkH6GOgeVeBxFHhZj1io0-U4Vx3Su9FRFmjwI7NIxW/pub?output=csv";
+  let dadosProjetos = [];
 
   function processaDados(data) {
+    dadosProjetos = data;
     const containerDCT = document.getElementById("indicadoresDCT");
     const containerEurofarma = document.getElementById("indicadoresEurofarma");
     containerDCT.innerHTML = "";
     containerEurofarma.innerHTML = "";
 
     let totalProjetos = data.length;
-    let andamento = 0;
 
     const contagemDCT = {
       "Concluído": 0,
@@ -254,21 +320,19 @@
       const status = row.Status?.trim().toUpperCase();
       if (status === "CONCLUÍDO") contagemDCT["Concluído"]++;
       if (status === "EM ANDAMENTO") contagemDCT["Em Andamento"]++;
-      if (status === "EM REVISÃO") contagemDCT["Em Revisão"]++;
-      if (status === "EM ANDAMENTO") andamento++;
+      if (status === "EM REVISAO" || status === "EM REVISÃO") contagemDCT["Em Revisão"]++;
 
       const submetido = row["Submetido Aconex"]?.trim().toUpperCase();
       if (submetido === "SIM") contagemEurofarma["Submetido Aconex"]++;
 
       const resposta = row["Resposta Aconex"]?.trim().toUpperCase();
       if (resposta === "APROVADO") contagemEurofarma["Aprovado"]++;
-      if (resposta === "REVISÃO") contagemEurofarma["Revisão Solicitada"]++;
+      if (resposta === "REVISÃO SOLICITADA") contagemEurofarma["Revisão Solicitada"]++;
       if (resposta === "EM ANÁLISE") contagemEurofarma["Em Análise"]++;
     });
 
-    // Indicadores DCT
     containerDCT.innerHTML += `
-      <div class="indicador">
+      <div class="indicador" data-status="TODOS">
         <div class="titulo">Total de Projetos</div>
         <div class="valor">${totalProjetos}</div>
         <div class="texto">projetos</div>
@@ -276,7 +340,7 @@
     `;
     Object.entries(contagemDCT).forEach(([status, count]) => {
       containerDCT.innerHTML += `
-        <div class="indicador">
+        <div class="indicador" data-status="${status.toUpperCase()}">
           <div class="titulo">${status}</div>
           <div class="valor">${count}</div>
           <div class="texto">projetos</div>
@@ -284,10 +348,9 @@
       `;
     });
 
-    // Indicadores Eurofarma
     Object.entries(contagemEurofarma).forEach(([status, count]) => {
       containerEurofarma.innerHTML += `
-        <div class="indicador">
+        <div class="indicador" data-resposta="${status.toUpperCase()}">
           <div class="titulo">${status}</div>
           <div class="valor">${count}</div>
           <div class="texto">projetos</div>
@@ -295,17 +358,64 @@
       `;
     });
 
-    // Gráfico Status
-    const maiorStatus = Object.entries(contagemDCT).sort((a, b) => b[1] - a[1])[0];
-    const percentualStatus = Math.round((maiorStatus[1] / totalProjetos) * 100);
-    document.getElementById("labelStatus").innerText = `${percentualStatus}%`;
+    document.querySelectorAll(".indicador").forEach(indicador => {
+      indicador.addEventListener("click", () => {
+        const status = indicador.dataset.status;
+        const resposta = indicador.dataset.resposta;
+        if (status) filtraPorStatus(status);
+        else if (resposta) filtraPorResposta(resposta);
+      });
+    });
 
-    new Chart(document.getElementById("graficoStatus"), {
+    const hoje = new Date();
+    const diaSemana = hoje.getDay();
+    const segunda = new Date(hoje);
+    segunda.setDate(hoje.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
+    const domingo = new Date(segunda);
+    domingo.setDate(segunda.getDate() + 6);
+
+    let simSemana = 0;
+    let naoSemana = 0;
+
+    dadosProjetos.forEach(row => {
+      const prazoRaw = row["Prazo"];
+      if (!prazoRaw) return;
+      const prazo = new Date(prazoRaw.trim());
+      const submetido = row["Submetido Aconex"]?.trim().toUpperCase();
+      if (prazo >= segunda && prazo <= domingo) {
+        if (submetido === "SIM") simSemana++;
+        else naoSemana++;
+      }
+    });
+
+    const totalSemana = simSemana + naoSemana;
+    const percentualNAO = totalSemana > 0 ? Math.round((naoSemana / totalSemana) * 100) : 0;
+
+    document.getElementById("labelStatus").innerText = `${percentualNAO}%`;
+    if (window.graficoStatusObj) window.graficoStatusObj.destroy();
+    window.graficoStatusObj = new Chart(document.getElementById("graficoStatus"), {
       type: "doughnut",
       data: {
-        labels: [maiorStatus[0], "Outros"],
+        labels: ["Entregues (SIM)", "Pendentes (NÃO)"],
         datasets: [{
-          data: [maiorStatus[1], totalProjetos - maiorStatus[1]],
+          data: [simSemana, naoSemana],
+          backgroundColor: ["#34A853", "#EA4335"]
+        }]
+      },
+      options: {
+        cutout: "70%",
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    document.getElementById("labelAndamento").innerText = `${simSemana} Doc's`;
+    if (window.graficoAndamentoObj) window.graficoAndamentoObj.destroy();
+    window.graficoAndamentoObj = new Chart(document.getElementById("graficoAndamento"), {
+      type: "doughnut",
+      data: {
+        labels: ["SIM", "NÃO"],
+        datasets: [{
+          data: [simSemana, naoSemana],
           backgroundColor: ["#0078D4", "#E0E0E0"]
         }]
       },
@@ -314,25 +424,52 @@
         plugins: { legend: { display: false } }
       }
     });
+  }
 
-    // Gráfico Andamento
-    const percentualAndamento = Math.round((andamento / totalProjetos) * 100);
-    document.getElementById("labelAndamento").innerText = `${percentualAndamento}%`;
+  function filtraPorStatus(statusFiltrado) {
+    let projetosFiltrados = dadosProjetos;
+    if (statusFiltrado !== "TODOS") {
+      projetosFiltrados = projetosFiltrados.filter(row =>
+        row.Status?.trim().toUpperCase() === statusFiltrado
+      );
+    }
+    renderizaTabela(projetosFiltrados, `Status: ${statusFiltrado}`);
+  }
 
-    new Chart(document.getElementById("graficoAndamento"), {
-      type: "doughnut",
-      data: {
-        labels: ["Em Andamento", "Outros"],
-        datasets: [{
-          data: [andamento, totalProjetos - andamento],
-          backgroundColor: ["#34A853", "#E0E0E0"]
-        }]
-      },
-      options: {
-        cutout: "70%",
-        plugins: { legend: { display: false } }
-      }
+  function filtraPorResposta(respostaFiltrada) {
+    let projetosFiltrados = [];
+    if (respostaFiltrada === "SUBMETIDO ACONEX") {
+      projetosFiltrados = dadosProjetos.filter(row =>
+        row["Submetido Aconex"]?.trim().toUpperCase() === "SIM"
+      );
+    } else {
+      projetosFiltrados = dadosProjetos.filter(row =>
+        row["Resposta Aconex"]?.trim().toUpperCase() === respostaFiltrada
+      );
+    }
+    renderizaTabela(projetosFiltrados, `Resposta Aconex: ${respostaFiltrada}`);
+  }
+
+  function renderizaTabela(linhas, tituloFiltro) {
+    const container = document.getElementById("tabelaProjetos");
+    if (linhas.length === 0) {
+      container.innerHTML = `<p style="text-align:center; color:#777;">Nenhum projeto encontrado para <strong>${tituloFiltro}</strong>.</p>`;
+      return;
+    }
+
+    const colunas = Object.keys(linhas[0]);
+    let html = `<table><thead><tr>`;
+    colunas.forEach(col => { html += `<th>${col}</th>`; });
+    html += `</tr></thead><tbody>`;
+    linhas.forEach(linha => {
+      html += `<tr>`;
+      colunas.forEach(col => {
+        html += `<td>${linha[col] ?? ""}</td>`;
+      });
+      html += `</tr>`;
     });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
   }
 
   fetch(planilhaCSV)
