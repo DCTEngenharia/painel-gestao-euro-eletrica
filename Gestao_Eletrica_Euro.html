@@ -147,10 +147,10 @@
 
     .grafico-label {
       position: absolute;
-      top: 56%;
-      left: 50%;
+      top: 55%;
+      left: 45%;
       transform: translate(-50%, -50%);
-      font-size: 22px;
+      font-size: 17px;
       font-weight: bold;
       color: #333;
     }
@@ -333,9 +333,9 @@
 
     containerDCT.innerHTML += `
       <div class="indicador" data-status="TODOS">
-        <div class="titulo">Total de Projetos</div>
+        <div class="titulo">Total</div>
         <div class="valor">${totalProjetos}</div>
-        <div class="texto">projetos</div>
+        <div class="texto">documentos</div>
       </div>
     `;
     Object.entries(contagemDCT).forEach(([status, count]) => {
@@ -343,7 +343,7 @@
         <div class="indicador" data-status="${status.toUpperCase()}">
           <div class="titulo">${status}</div>
           <div class="valor">${count}</div>
-          <div class="texto">projetos</div>
+          <div class="texto">documentos</div>
         </div>
       `;
     });
@@ -353,7 +353,7 @@
         <div class="indicador" data-resposta="${status.toUpperCase()}">
           <div class="titulo">${status}</div>
           <div class="valor">${count}</div>
-          <div class="texto">projetos</div>
+          <div class="texto">documentos</div>
         </div>
       `;
     });
@@ -408,7 +408,7 @@
       }
     });
 
-    document.getElementById("labelAndamento").innerText = `${simSemana} Doc's`;
+    document.getElementById("labelAndamento").innerText = `${simSemana} doc's`;
     if (window.graficoAndamentoObj) window.graficoAndamentoObj.destroy();
     window.graficoAndamentoObj = new Chart(document.getElementById("graficoAndamento"), {
       type: "doughnut",
